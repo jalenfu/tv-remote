@@ -9,6 +9,7 @@ import threading
 import time
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
+import isodate
 
 # Load environment variables
 load_dotenv()
@@ -39,6 +40,18 @@ def find_tab_by_url(driver, url_substring):
         if url_substring in driver.current_url:
             return handle
     return None
+
+def is_not_short(details):
+    # Filter out videos shorter than 60 seconds
+    duration_str = details.get('contentDetails', {}).get('duration')
+    if duration_str:
+        try:
+            duration = isodate.parse_duration(duration_str).total_seconds()
+            return duration >= 60
+        except Exception:
+            pass
+    # If duration is missing or can't be parsed, include the video
+    return True
 
 youtube_router = APIRouter()
 
@@ -148,7 +161,7 @@ def youtube_search(q: str):
     videos_data = videos_resp.json()
     details_map = {item['id']: item for item in videos_data.get('items', [])}
 
-    # Merge details
+    # Merge details and filter out Shorts by duration
     videos = []
     for item in video_items:
         vid = item['id']['videoId']
@@ -158,11 +171,14 @@ def youtube_search(q: str):
         snippet = details['snippet']
         content_details = details['contentDetails']
         statistics = details.get('statistics', {})
+        if not is_not_short(details):
+            continue  # Skip Shorts
+        thumbnails = snippet.get('thumbnails', {})
         videos.append({
             'videoId': vid,
             'title': snippet['title'],
             'channelTitle': snippet['channelTitle'],
-            'thumbnail': snippet['thumbnails']['default']['url'],
+            'thumbnail': thumbnails['default']['url'],
             'publishedAt': snippet['publishedAt'],
             'duration': content_details['duration'],
             'viewCount': statistics.get('viewCount'),
@@ -220,17 +236,38 @@ def youtube_feed():
                 return []
             pl_data = pl_resp.json()
             vids = []
+            video_ids = []
+            snippet_map = {}
             for vid in pl_data.get('items', []):
                 s = vid['snippet']
-                title = s['title']
-                if 'shorts' in title.lower():
+                video_id = s['resourceId']['videoId']
+                video_ids.append(video_id)
+                snippet_map[video_id] = s
+            # Batch fetch details for these videos
+            if not video_ids:
+                return []
+            videos_url = 'https://www.googleapis.com/youtube/v3/videos'
+            videos_params = {
+                'part': 'snippet,contentDetails,statistics',
+                'id': ','.join(video_ids)
+            }
+            videos_resp = requests.get(videos_url, headers=get_youtube_headers(), params=videos_params)
+            if videos_resp.status_code != 200:
+                return []
+            videos_data = videos_resp.json()
+            for details in videos_data.get('items', []):
+                s = snippet_map.get(details['id'])
+                if not s:
                     continue
+                if not is_not_short(details):
+                    continue  # Skip Shorts
+                thumbnails = s.get('thumbnails', {})
                 vids.append({
-                    'videoId': s['resourceId']['videoId'],
-                    'title': title,
+                    'videoId': details['id'],
+                    'title': s['title'],
                     'channelTitle': s['channelTitle'],
                     'channelId': ch['channelId'],
-                    'thumbnail': s['thumbnails']['medium']['url'] if 'medium' in s['thumbnails'] else s['thumbnails']['default']['url'],
+                    'thumbnail': thumbnails['medium']['url'] if 'medium' in thumbnails else thumbnails['default']['url'],
                     'publishedAt': s['publishedAt']
                 })
             return vids
