@@ -5,7 +5,7 @@ pygetwindow
 selenium
 python-dotenv
 requests 
-pycaw
 comtypes 
 screeninfo 
 isodate 
+pycaw @ https://github.com/AndreMiras/pycaw/archive/develop.zip

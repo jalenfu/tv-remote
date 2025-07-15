@@ -229,23 +229,6 @@ def theater_mode(channel: str = Query(None, description="Twitch channel name (op
         except Exception as e:
             return JSONResponse({"error": f"Failed to send theater mode command: {e}"}, status_code=500)
 
-@twitch_router.post('/stream_volume')
-def stream_volume(level: float = Query(..., ge=0.0, le=1.0)):
-    try:
-        import comtypes
-        from pycaw.pycaw import AudioUtilities
-        comtypes.CoInitialize()
-        devices = AudioUtilities.GetSpeakers()
-        interface = devices.Activate(
-            comtypes.GUID('{5CDF2C82-841E-4546-9722-0CF74078229A}'),
-            comtypes.CLSCTX_ALL, None)
-        from pycaw.pycaw import IAudioEndpointVolume
-        volume = interface.QueryInterface(IAudioEndpointVolume)
-        volume.SetMasterVolumeLevelScalar(level, None)
-        return {"status": f"System volume set to {level:.2f}"}
-    except Exception as e:
-        return JSONResponse({"error": f"Failed to set system volume: {e}"}, status_code=500)
-
 @twitch_router.post('/api/twitch/playpause')
 def twitch_playpause(channel: str = Query(None, description="Twitch channel name (optional)")):
     driver = get_selenium_driver()

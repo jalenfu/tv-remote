@@ -61,7 +61,7 @@ export default function TwitchStreamControl() {
 
   // Fetch current system volume
   useEffect(() => {
-    fetch('/api/system_volume')
+    fetch('/api/audio/system_volume')
       .then(r => r.json())
       .then(data => {
         if (typeof data.volume === 'number') setVolume(data.volume);
@@ -89,10 +89,7 @@ export default function TwitchStreamControl() {
 
   const setSystemVolume = (v) => {
     setVolume(v);
-    setStatus('Setting volume...');
-    fetch(`/stream_volume?level=${v}`, { method: 'POST' })
-      .then(r => r.json())
-      .then(data => setStatus(data.status || data.error || ''));
+    fetch(`/api/audio/system_volume?level=${v}`, { method: 'POST' });
   };
 
   // When toggling play/pause, update state and localStorage

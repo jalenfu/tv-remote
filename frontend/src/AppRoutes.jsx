@@ -55,6 +55,49 @@ function HomeLastPlayedCard({ lastPlayed, onClick }) {
   );
 }
 
+function AudioDeviceSelector() {
+  const [devices, setDevices] = useState([]);
+  const [selected, setSelected] = useState('');
+  const [status, setStatus] = useState('');
+
+  useEffect(() => {
+    // Fetch devices
+    fetch('/api/audio/devices')
+      .then(res => res.json())
+      .then(data => setDevices(data.devices || []));
+    // Fetch current device
+    fetch('/api/audio/currentdevice')
+      .then(res => res.json())
+      .then(data => {
+        if (data.device && data.device.id) setSelected(data.device.id);
+      });
+  }, []);
+
+  const handleChange = (e) => {
+    const deviceId = e.target.value;
+    setSelected(deviceId);
+    setStatus('Switching device...');
+    fetch('/api/audio/device', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device_id: deviceId }),
+    })
+      .then(res => res.json())
+      .then(data => setStatus(data.status || data.error || ''));
+  };
+
+  return (
+    <div style={{margin: '16px auto', maxWidth: 320, background: '#222', borderRadius: 10, boxShadow: '0 2px 8px #0008', padding: 12}}>
+      <label htmlFor="audio-device-select" style={{color: '#fff', fontWeight: 'bold'}}>Playback Device: </label>
+      <select id="audio-device-select" value={selected} onChange={handleChange} style={{marginLeft: 8, padding: 4, borderRadius: 4}}>
+        <option value="">Select device</option>
+        {devices.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+      </select>
+      {status && <div style={{color: '#6cf', marginTop: 8}}>{status}</div>}
+    </div>
+  );
+}
+
 function AppRoutes() {
   const [screen, setScreen] = useState('Home');
   const [lastPlayed, setLastPlayed] = useState(null);
@@ -94,6 +137,7 @@ function AppRoutes() {
                 <div style={{padding: 24, textAlign: 'center'}}>
                   <h1>PC TV Remote</h1>
                   <p>Select a service below.</p>
+                  <AudioDeviceSelector />
                   <HomeLastPlayedCard lastPlayed={lastPlayed} onClick={handleLastPlayedClick} />
                 </div>
               )}

@@ -279,7 +279,7 @@ def youtube_feed():
         for future in as_completed(futures):
             feed.extend(future.result())
     feed.sort(key=lambda v: v['publishedAt'], reverse=True)
-    return {'feed': feed[:15]}
+    return {'feed': feed[:25]}
 
 @youtube_router.post("/api/youtube/video/open")
 def youtube_video_open(videoId: str = Query(..., description="YouTube video ID")):
@@ -401,21 +401,4 @@ def youtube_video_playing(videoId: str = Query(...)):
             )
             return {"playing": bool(is_playing)}
         except Exception as e:
-            return JSONResponse({"error": f"Failed to get play state: {e}"}, status_code=500)
-
-@youtube_router.get("/api/system_volume")
-def get_system_volume():
-    try:
-        import comtypes
-        from pycaw.pycaw import AudioUtilities
-        comtypes.CoInitialize()
-        devices = AudioUtilities.GetSpeakers()
-        interface = devices.Activate(
-            comtypes.GUID('{5CDF2C82-841E-4546-9722-0CF74078229A}'),
-            comtypes.CLSCTX_ALL, None)
-        from pycaw.pycaw import IAudioEndpointVolume
-        volume = interface.QueryInterface(IAudioEndpointVolume)
-        level = volume.GetMasterVolumeLevelScalar()
-        return {"volume": level}
-    except Exception as e:
-        return JSONResponse({"error": f"Failed to get system volume: {e}"}, status_code=500) 
+            return JSONResponse({"error": f"Failed to get play state: {e}"}, status_code=500) 

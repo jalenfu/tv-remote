@@ -61,7 +61,7 @@ export default function YouTubeVideoControl() {
   // Fetch current system volume after video is opened and info loaded
   useEffect(() => {
     if (!pollingActive || loading || error) return;
-    fetch('/api/system_volume')
+    fetch('/api/audio/system_volume')
       .then(r => r.json())
       .then(data => {
         if (typeof data.volume === 'number') setVolume(data.volume);
@@ -83,7 +83,7 @@ export default function YouTubeVideoControl() {
 
   // Fetch system volume on mount
   useEffect(() => {
-    fetch('/api/system_volume')
+    fetch('/api/audio/system_volume')
       .then(res => res.json())
       .then(data => {
         if (typeof data.volume === 'number') {
@@ -94,7 +94,7 @@ export default function YouTubeVideoControl() {
 
   const setSystemVolume = (v) => {
     setVolume(v);
-    fetch(`/stream_volume?level=${v}`, { method: 'POST' });
+    fetch(`/api/audio/system_volume?level=${v}`, { method: 'POST' });
   };
 
   // When toggling play/pause, update state and localStorage
