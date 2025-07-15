@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pyautogui
+pygetwindow
+selenium
+python-dotenv
+requests 
+pycaw
+comtypes 
+screeninfo 
