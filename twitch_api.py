@@ -65,6 +65,14 @@ def move_firefox_to_monitor(monitor_index=2):
             win = windows[0]
             win.moveTo(mon.x, mon.y)
             win.maximize()
+            # Add a small delay to ensure window is properly positioned
+            time.sleep(0.5)
+            # Activate the window to ensure it has focus
+            win.activate()
+            time.sleep(0.2)
+            # Send F11 to fullscreen the browser
+            pyautogui.press('f11')
+            print(f"Firefox moved to monitor {monitor_index+1} and fullscreened")
     except Exception as e:
         print(f"Could not move Firefox to monitor {monitor_index+1}: {e}")
 
